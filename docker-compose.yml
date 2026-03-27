@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  panel:
+    extends:
+      file: panel/compose/docker-compose.yml
+      service: pterodactyl-panel
+
+  wings:
+    extends:
+      file: wings/compose/docker-compose.yml
+      service: wings
+
+  traefik:
+    extends:
+      file: _base/compose/docker-compose.yml
+      service: traefik
