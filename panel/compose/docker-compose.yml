@@ -1,49 +1,19 @@
 version: '3.8'
-x-common:
-  database:
-    &db-environment
-    # Do not remove the "&db-password" from the end of the line below, it is important
-    # for Panel functionality.
-    MYSQL_PASSWORD: &db-password "CHANGE_ME"
-    MYSQL_ROOT_PASSWORD: "CHANGE_ME"
-  panel:
-    &panel-environment
-    APP_URL: "https://panel.example.com"
-    # A list of valid timezones can be found here: http://php.net/manual/en/timezones.php
-    APP_TIMEZONE: "UTC"
-    APP_SERVICE_AUTHOR: "admin@example.com"
-  mail:
-    &mail-environment
-    MAIL_FROM: "noreply@example.com"
-    MAIL_DRIVER: "smtp"
-    MAIL_HOST: "mail"
-    MAIL_PORT: "1025"
-    MAIL_USERNAME: ""
-    MAIL_PASSWORD: ""
-    MAIL_ENCRYPTION: "true"
-
-#
-# ------------------------------------------------------------------------------------------
-# DANGER ZONE BELOW
-#
-# The remainder of this file likely does not need to be changed. Please only make modifications
-# below if you understand what you are doing.
-#
 
 services:
-
   database:
-    image: library/mysql:8.0
+    image: mysql:8.0
     restart: always
-    networks:
-      - local
     command: --default-authentication-plugin=mysql_native_password
     volumes:
       - "${DATA_DIR}/database:/var/lib/mysql"
     environment:
-      <<: *db-environment
+      MYSQL_ROOT_PASSWORD: "$$Jamiecracksalkadaily911$$"
+      MYSQL_PASSWORD: "$$Jamiecracksalkadaily911$$"
       MYSQL_DATABASE: "panel"
       MYSQL_USER: "pterodactyl"
+    networks:
+      - local
 
   cache:
     image: redis:alpine
@@ -54,46 +24,40 @@ services:
   panel:
     image: ghcr.io/pterodactyl/panel:v1.11.10
     restart: always
-    networks:
-      - pterodactyl
-      - local
-    links:
+    ports:
+      - "8080:80"
+    depends_on:
       - database
       - cache
     volumes:
-      - "${DATA_DIR}/panel/var/:/app/var/"
-      - "${DATA_DIR}/panel/logs/:/app/storage/logs"
-      - "${DATA_DIR}/panel/nginx/:/etc/nginx/conf.d/"
+      - "${DATA_DIR}/panel/var:/app/var"
+      - "${DATA_DIR}/panel/logs:/app/storage/logs"
+      - "${DATA_DIR}/panel/nginx:/etc/nginx/conf.d"
     environment:
-      <<: [*panel-environment, *mail-environment]
-      DB_PASSWORD: *db-password
+      APP_URL: "http://mcpanel.mcbetiers.com:8080"
+      APP_TIMEZONE: "UTC"
+      APP_SERVICE_AUTHOR: "admin@mcpanel.mcbetiers.com"
       APP_ENV: "production"
       APP_ENVIRONMENT_ONLY: "false"
+
+      DB_HOST: "database"
+      DB_PORT: "3306"
+      DB_DATABASE: "panel"
+      DB_USERNAME: "pterodactyl"
+      DB_PASSWORD: "$$Jamiecracksalkadaily911$$"
+
       CACHE_DRIVER: "redis"
       SESSION_DRIVER: "redis"
       QUEUE_DRIVER: "redis"
       REDIS_HOST: "cache"
-      DB_HOST: "database"
+
       TRUSTED_PROXIES: "*"
-    labels:
-      # HTTP
-      - "traefik.http.routers.pterodactyl_panel.entrypoints=web"
-      - "traefik.http.routers.pterodactyl_panel.rule=Host(`${PANEL_DOMAIN}`)"
-      - "traefik.http.routers.pterodactyl_panel.middlewares=panel_https"
-      - "traefik.http.middlewares.panel_https.redirectscheme.scheme=https"
-      # HTTPS
-      - "traefik.http.routers.pterodactyl_panel-https.entrypoints=websecure"
-      - "traefik.http.routers.pterodactyl_panel-https.rule=Host(`${PANEL_DOMAIN}`)"
-      - "traefik.http.routers.pterodactyl_panel-https.tls=true"
-      - "traefik.http.routers.pterodactyl_panel-https.tls.certresolver=letsencrypt"
-      - "traefik.http.services.pterodactyl_panel-https.loadbalancer.server.port=80"
+    networks:
+      - local
+      - pterodactyl
 
 networks:
   local:
-    external: false
+    driver: bridge
   pterodactyl:
     external: true
-  default:
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
